@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using NCMB;
+using System;
 
 public class TestSignup : MonoBehaviour
 {
@@ -36,22 +37,62 @@ public class TestSignup : MonoBehaviour
         ButtonActivation(false);
         // クラスのNCMBObjectを作成
         NCMBObject testClass = new NCMBObject("TestClass");
-        //testClass.ObjectId = NCMBUser.CurrentUser.ObjectId;
-        testClass["user_obj"] = NCMBUser.CurrentUser;
-        testClass["message"] = m_strWriteMessage;
-        testClass.SaveAsync((NCMBException e) => {
+
+        GetObjectId(
+            "TestClass",
+            "user_obj",
+            NCMBUser.CurrentUser, (_str) =>
+       {
+           if (_str != null)
+           {
+               testClass.ObjectId = _str;
+           }
+           else
+           {
+               testClass["user_obj"] = NCMBUser.CurrentUser;
+           }
+           testClass["message"] = m_strWriteMessage;
+
+           testClass.SaveAsync((NCMBException e) =>
+           {
+               if (e != null)
+               {
+                    //エラー処理
+                }
+               else
+               {
+                    //成功時の処理
+                    Debug.Log("success");
+                   ButtonActivation(true);
+               }
+           });
+       });
+    }
+
+    public string GetObjectId( string _strClass , string _strKey , NCMBUser _user , Action<string> _success)
+    {
+        string ret = null;
+        NCMBQuery<NCMBObject> query = new NCMBQuery<NCMBObject>(_strClass);
+        query.WhereEqualTo(_strKey, _user);
+        query.FindAsync((List<NCMBObject> objList, NCMBException e) => {
             if (e != null)
             {
-                //エラー処理
+                //検索失敗時の処理
             }
             else
             {
-                //成功時の処理
-                Debug.Log("success");
-                ButtonActivation(true);
+                if(0 < objList.Count)
+                {
+                    ret = objList[0].ObjectId;
+                    _success.Invoke(ret);
+                }
             }
         });
+        return null;
     }
+
+
+
     public void Read()
     {
         ButtonActivation(false);
